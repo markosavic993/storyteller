@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, {useEffect, useState} from 'react';
 import './App.css';
-import { API } from 'aws-amplify';
-import { withAuthenticator, AmplifySignOut } from '@aws-amplify/ui-react';
-import { listStorys } from './graphql/queries';
-import { createStory as createStoryMutation, deleteStory as deleteStoryMutation } from './graphql/mutations';
+import {API, Storage} from 'aws-amplify';
+import {AmplifySignOut, withAuthenticator} from '@aws-amplify/ui-react';
+import {listStorys} from './graphql/queries';
+import {createStory as createStoryMutation, deleteStory as deleteStoryMutation} from './graphql/mutations';
 
 const initialFormState = { title: '', content: '' }
 
@@ -15,14 +15,34 @@ function App() {
     fetchStories();
   }, []);
 
+  async function onChange(e) {
+    if (!e.target.files[0]) return
+    const file = e.target.files[0];
+    console.log(file);
+    setFormData({ ...formData, image: file.name });
+    await Storage.put(file.name, file);
+    fetchStories();
+  }
+
   async function fetchStories() {
     const apiData = await API.graphql({ query: listStorys });
-    setStories(apiData.data.listStorys.items);
+    let storiesFromApi = apiData.data.listStorys.items;
+    await Promise.all(storiesFromApi.map(async story => {
+      if (story.image) {
+        const image = await Storage.get(story.image);
+        story.image = image;
+      }
+      return story;
+    }));
+    setStories(storiesFromApi);
   }
 
   async function createStory() {
     if (!formData.title || !formData.content) return;
     await API.graphql({ query: createStoryMutation, variables: { input: formData } });
+    if (formData.image) {
+      formData.image = await Storage.get(formData.image);
+    }
     setStories([ ...stories, formData ]);
     setFormData(initialFormState);
   }
@@ -46,14 +66,21 @@ function App() {
         placeholder="Story content"
         value={formData.content}
       />
-      <button onClick={createStory}>Create Note</button>
+      <input
+        type="file"
+        onChange={onChange}
+      />
+      <button onClick={createStory}>Create Story</button>
       <div style={{marginBottom: 30}}>
         {
-          stories.map(note => (
-            <div key={note.id || note.title}>
-              <h2>{note.title}</h2>
-              <p>{note.content}</p>
-              <button onClick={() => deleteStory(note)}>Delete story</button>
+          stories.map(story => (
+            <div key={story.id || story.title}>
+              <h2>{story.title}</h2>
+              <p>{story.content}</p>
+              <button onClick={() => deleteStory(story)}>Delete story</button>
+              {
+                story.image && <img src={story.image} style={{width: 400}}  alt='' />
+              }
             </div>
           ))
         }

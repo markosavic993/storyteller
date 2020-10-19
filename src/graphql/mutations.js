@@ -10,6 +10,7 @@ export const createStory = /* GraphQL */ `
       id
       title
       content
+      image
       createdAt
       updatedAt
     }
@@ -24,6 +25,7 @@ export const updateStory = /* GraphQL */ `
       id
       title
       content
+      image
       createdAt
       updatedAt
     }
@@ -38,6 +40,7 @@ export const deleteStory = /* GraphQL */ `
       id
       title
       content
+      image
       createdAt
       updatedAt
     }

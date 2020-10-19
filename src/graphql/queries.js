@@ -7,6 +7,7 @@ export const getStory = /* GraphQL */ `
       id
       title
       content
+      image
       createdAt
       updatedAt
     }
@@ -23,6 +24,7 @@ export const listStorys = /* GraphQL */ `
         id
         title
         content
+        image
         createdAt
         updatedAt
       }
